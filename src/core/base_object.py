@@ -212,6 +212,153 @@ class BaseObjectBuilder(BaseObject):
         return self
 
 
+class BaseObjectManager(BaseObject):
+    """
+    A base class for implementing managers for objects of type
+    :py:class:`BaseObject`.
+
+    The manager provides a cache for objects and a factory for creating new
+    objects. The cache expires after a configurable time limit.
+
+    Attributes:
+        cache (Dict[str, Any]): The cache of objects.
+        timestamp (datetime): The timestamp of the last cache update.
+        time_limit (int): The time limit in seconds for the cache.
+    """
+
+    def __init__(self, time_limit: int = 300,) -> None:
+        """
+        Initializes a BaseObjectManager.
+
+        :param time_limit: The time limit in seconds for the cache. Defaults to 300 seconds.
+        """
+        super().__init__()
+
+        self._cache: Dict[str, Any] = {}
+        self._time_limit: int = time_limit
+        self._timestamp: datetime = datetime.now()
+
+    @property
+    def cache(self) -> Dict[str, Any]:
+        """
+        Gets the current cache of objects.
+
+        :return: The current cache of objects.
+        """
+        return self._cache
+
+    @property
+    def time_limit(self) -> int:
+        """
+        Gets the time limit in seconds for the cache.
+
+        :return: The time limit in seconds for the cache.
+        """
+        return self._time_limit
+
+    @property
+    def timestamp(self) -> datetime:
+        """
+        Gets the timestamp of the last cache update.
+
+        :return: The timestamp of the last cache update.
+        """
+        return self._timestamp
+
+    @timestamp.setter
+    def timestamp(self, value: datetime,) -> None:
+        """
+        Sets the timestamp of the last cache update.
+
+        :param value: The new timestamp value.
+        """
+        self._timestamp = value
+
+    def _add_to_cache_(self, key: str, value: Any,) -> None:
+        """
+        Adds the specified entry to the cache.
+
+        :param key: The key of the entry.
+        :param value: The value of the entry.
+        """
+        self._cache[key] = value
+
+        self._logger.info(message=f"Added {key} to cache.")
+
+    def _check_time_limit_(self) -> bool:
+        """
+        Checks if the time limit has been reached.
+
+        :return: True if the time limit has been reached, False otherwise.
+        """
+        return (datetime.now() - self._timestamp).total_seconds() > self._time_limit
+
+    def _flush_cache_(self, force: bool = False,) -> None:
+        """
+        Flushes the cache.
+
+        If the time limit has been reached or if the force parameter is True,
+        the cache is flushed by clearing its contents and resetting the timestamp.
+        This method is intended to be called internally by the cache property
+        setter.
+
+        :param force: Whether to flush the cache regardless of the time limit.
+        :type force: bool
+        """
+        if force or self._check_time_limit_():
+            self._cache = {}
+            self._timestamp = datetime.now()
+
+            self._logger.info(message="Flushed cache.")
+
+    def _get_from_cache_(self, key: str,) -> Any:
+        """
+        Retrieves the value associated with the specified key from the cache.
+
+        :param key: The key of the entry.
+        :return: The value associated with the key.
+
+        If the key is not found in the cache, a KeyError is raised.
+        """
+        return self._cache[key]
+
+    def _is_in_cache_(self, key: str,) -> bool:
+        """
+        Checks if the specified key is in the cache.
+
+        :param key: The key to check.
+        :return: True if the key is in the cache, False otherwise.
+        """
+        return key in self._cache
+
+    def _remove_from_cache_(self, key: str,) -> None:
+        """
+        Removes the specified key from the cache.
+
+        This method is intended to be called internally by the cache property
+        setter.
+
+        :param key: The key to remove.
+        """
+        del self._cache[key]
+
+        self._logger.info(message=f"Removed {key} from cache.")
+
+    def _update_in_cache_(self, key: str, value: Any,) -> None:
+        """
+        Updates the value associated with the specified key in the cache.
+
+        This method is intended to be called internally by the cache property
+        setter.
+
+        :param key: The key of the entry.
+        :param value: The new value of the entry.
+        """
+        self._cache[key] = value
+
+        self._logger.info(message=f"Updated {key} in cache.")
+
+
 class ImmutableBaseObject(BaseObject):
     """
     A base class for creating objects that support attribute access
