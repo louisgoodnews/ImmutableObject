@@ -106,7 +106,7 @@ class BaseObject:
         """
         Returns a string representation of the object, listing all attributes and values.
         """
-        return f"{self.__class__.__name__}({', '.join(f'{key}={value}' for (key, value,) in self.__dict__.items())})"
+        return f"<{self.__class__.__name__}({', '.join(f'{key}={value}' for (key, value,) in self.__dict__.items())})>"
 
     def to_dict(
         self,
@@ -126,6 +126,90 @@ class BaseObject:
             ) in self.__dict__.items()
             if key not in exclude or []
         }
+
+
+class BaseObjectBuilder(BaseObject):
+    """
+    A base class for creating object builders that support dynamic attribute assignment
+    and also provide a mapping interface.
+
+    This class is a specialized version of BaseObject that is designed to be used
+    as a builder for other objects. It provides a configuration dictionary that can be used to
+    store the attributes of the object being built.
+
+    The configuration dictionary is a dictionary of key-value pairs, where each key is an attribute
+    name and the value is the attribute value.
+
+    The BaseObjectBuilder class also provides a build method that can be overridden in subclasses to
+    build the final object based on the configuration.
+    """
+
+    def __init__(self) -> None:
+        """
+        Initializes the BaseObjectBuilder class.
+
+        The BaseObjectBuilder class is a specialized version of BaseObject that is designed to be used
+        as a builder for other objects. It provides a configuration dictionary that can be used to
+        store the attributes of the object being built.
+
+        The configuration dictionary is a dictionary of key-value pairs, where each key is an attribute
+        name and the value is the attribute value.
+
+        The BaseObjectBuilder class also provides a build method that can be overridden in subclasses to
+        build the final object based on the configuration.
+
+        :return: The initialized BaseObjectBuilder object.
+        """
+        super().__init__()
+        self._configuration: Dict[str, Any] = {}
+
+    @property
+    def configuration(self) -> Dict[str, Any]:
+        """
+        Returns the current configuration of the builder.
+
+        The configuration is a dictionary of key-value pairs, where each key is an attribute name and
+        the value is the attribute value.
+
+        :return: The current configuration of the builder.
+        """
+        return self._configuration
+
+    @configuration.setter
+    def configuration(
+        self,
+        value: Dict[str, Any],
+    ) -> None:
+        """
+        Updates the builder's configuration with the provided dictionary of values.
+
+        :param value: A dictionary of key-value pairs to update the configuration.
+        :return: The updated builder object.
+        """
+        self._configuration = value
+
+    def build(self) -> Any:
+        """
+        Builds an object based on the builder's configuration.
+
+        :return: An object of a type determined by the builder's configuration.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement the 'build' method."
+        )
+
+    def kwargs(
+        self,
+        **kwargs,
+    ) -> Self:
+        """
+        Updates the builder's configuration with the provided keyword arguments.
+
+        :param kwargs: Additional keyword arguments to update the configuration.
+        :return: The updated builder object.
+        """
+        self._configuration.update(kwargs)
+        return self
 
 
 class ImmutableBaseObject(BaseObject):
